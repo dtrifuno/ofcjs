@@ -1,0 +1,80 @@
+:root {
+  --width: 12vh;
+}
+
+.App {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  padding: 5vh;
+
+  text-align: center;
+  background: green;
+  height: 100vh;
+}
+
+.App-header {
+  text-align: center;
+  background-color: #282c34;
+  display: block;
+  width: 100%;
+  height: 10vh;
+  position: fixed;
+  top: 0;
+  padding: 0px;
+  font-size: 20px;
+  color: white;
+}
+
+.player {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-row {
+  display: flex;
+  flex-direction: row;
+  margin: 0.75vh;
+}
+
+.card-outline {
+  height: calc(1.44674 * var(--width));
+  width: var(--width);
+  margin-left: 0.35vh;
+  margin-right: 0.35vh;
+  border: 2px solid white;
+  border-radius: 3%;
+}
+
+.card-outline-selected {
+  border: 2px solid red;
+}
+
+.card {
+  width: 99.5%;
+  height: 99.5%;
+}
+
+.nameplate-container {
+  margin-top: 2vh;
+  margin-bottom: 2vh;
+  display: flex;
+  flex-direction: row;
+}
+
+.nameplate {
+  border: 1px solid white;
+  min-width: 7vh;
+  margin: auto;
+  border-radius: 35%;
+  background-color: white;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 2.2vh;
+}
+
+.chips {
+  font-size: 2vh;
+}
