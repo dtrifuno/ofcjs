@@ -110,9 +110,40 @@ Card.prototype.toSuitNum = new Map([
 
 Card.prototype.fromSuitNum = ["s", "h", "d", "c"];
 
+class Deck {
+  constructor() {
+    this.cards = [];
+    this.reset();
+  }
+
+  draw(n = 1) {
+    return this.cards.splice(0, n);
+  }
+
+  shuffle() {
+    const n = this.cards.length;
+    for (let i = 0; i < n - 1; i++) {
+      const j = Math.floor(Math.random() * (n - i)) + i;
+      [this.cards[i], this.cards[j]] = [this.cards[j], this.cards[i]];
+    }
+  }
+
+  reset() {
+    this.cards = [];
+    for (const suitNum of Array.from(Array(4).keys())) {
+      this.cards = this.cards.concat(
+        Array.from(Array(13).keys()).map(r => new Card(r, suitNum))
+      );
+    }
+    this.shuffle();
+  }
+}
+
 let c = new Card(10, 3);
 console.log(c.toNumber());
 console.log(Card.fromNumber(c.toNumber()).toString());
 console.log(Card.fromString("As").toString());
+console.log(JSON.stringify(Card.fromString("As")));
+let d = new Deck();
 
-export default Card;
+export { Card, Deck };

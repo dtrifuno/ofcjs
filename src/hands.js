@@ -1,5 +1,5 @@
 import { flush5, unique5, rest5, unique3, rest3 } from "./createHandRatings";
-import Card from "./card";
+import { Card } from "./card";
 
 class FastHandEvaluator {
   constructor() {

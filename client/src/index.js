@@ -3,13 +3,23 @@ import ReactDOM from "react-dom";
 import "./index.css";
 import App from "./App";
 import * as serviceWorker from "./serviceWorker";
+import { playerState, opponentState, sstate } from "./containers";
 
-import { Provider } from "unstated";
-import * as x from "./hands";
+import "./communicate";
+
+import { Provider, Subscribe } from "unstated";
 
 ReactDOM.render(
   <Provider>
-    <App />
+    <Subscribe to={[playerState, opponentState, sstate]}>
+      {(playerState, opponentState, sstate) => (
+        <App
+          playerState={playerState}
+          opponentState={opponentState}
+          sstate={sstate}
+        />
+      )}
+    </Subscribe>
   </Provider>,
   document.getElementById("root")
 );

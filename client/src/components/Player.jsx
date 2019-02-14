@@ -1,24 +1,60 @@
 import React, { Component } from "react";
-import { Subscribe } from "unstated";
-
-import gameState from "../containers";
 import Card from "./Card";
+
+import handler from "../communicate";
 
 class Player extends Component {
   state = {};
 
-  onClickFixed(playerId, rowId, n) {}
+  clickDealt(n) {
+    const player = this.props.playerState;
 
-  renderRow(gameState, rowId) {
+    // clicked on empty slot, do nothing
+    if (player.state.dealt[n] === null) {
+      return;
+    }
+
+    // clicked on selected card, deselect
+    if (player.state.selected === n) {
+      player.setState(state => ({
+        ...state,
+        selected: null
+      }));
+      return;
+    }
+
+    // else, select this card
+    player.setState(state => ({
+      ...state,
+      selected: n
+    }));
+  }
+
+  clickFixed(rowId, n) {
+    const { playerState } = this.props;
+    const filled = playerState.state[rowId][n] !== null;
+    const selected = playerState.state.selected !== null;
+
+    if (!filled && selected) {
+      const fromIdx = playerState.state.selected;
+      const card = playerState.state.dealt[fromIdx];
+      console.log(card);
+      playerState.move(fromIdx, rowId, n, card);
+      handler.set(fromIdx, rowId, n);
+    }
+  }
+
+  renderRow(playerState, rowId, onClick) {
+    const cards = playerState.state[rowId];
     return (
       <div className="card-row">
-        {gameState.state.player[rowId].map((_, i) => (
+        {cards.map((_, i) => (
           <Card
             key={i}
             n={i}
-            playerId="player"
             rowId={rowId}
-            gameState={gameState}
+            onClick={() => onClick(i)}
+            playerState={playerState}
           />
         ))}
       </div>
@@ -26,40 +62,34 @@ class Player extends Component {
   }
 
   render() {
-    const { name, chips } = this.props.gameState.state.player;
+    const playerState = this.props.playerState;
+    const { name, chips } = playerState.state;
+
     return (
       <div className="player">
         <div className="rows-container">
-          {this.renderRow(gameState, "front")}
-          {this.renderRow(gameState, "middle")}
-          {this.renderRow(gameState, "bottom")}
+          {this.renderRow(playerState, "front", i =>
+            this.clickFixed("front", i)
+          )}
+          {this.renderRow(playerState, "middle", i =>
+            this.clickFixed("middle", i)
+          )}
+          {this.renderRow(playerState, "back", i => this.clickFixed("back", i))}
         </div>
-        <div className="nameplate-container">
-          <div className="nameplate">
-            <div className="name">{name}</div>
-            <div className="chips">{chips}</div>
+        <div className="bottom">
+          <div className="nameplate-container">
+            <div className="nameplate">
+              <div className="name">{name}</div>
+              <div className="chips">{chips}</div>
+            </div>
           </div>
-        </div>
-        <div className="backrow-container">
-          {this.renderRow(gameState, "dealt")}
+          <div className="backrow-container">
+            {this.renderRow(playerState, "dealt", i => this.clickDealt(i))}
+          </div>
         </div>
       </div>
     );
   }
 }
 
-class PlayerWrapper extends Component {
-  render() {
-    return (
-      <Subscribe to={[gameState]}>
-        {gameState => (
-          <Player gameState={gameState} playerId={this.props.playerId} />
-        )}
-      </Subscribe>
-    );
-  }
-}
-
-export default PlayerWrapper;
-
-//export default Player;
+export default Player;

@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "server": "nodemon --exec babel-node src/index.js"
+    "server": "nodemon --exec babel-node src/index.js",
+    "ranker": "nodemon --exec babel-node src/standardRanker.js"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,8 @@
     "@babel/node": "^7.2.2"
   },
   "dependencies": {
-    "@babel/preset-env": "^7.3.1"
+    "@babel/preset-env": "^7.3.1",
+    "poker-evaluator": "^0.3.1",
+    "socket.io": "^2.2.0"
   }
 }
