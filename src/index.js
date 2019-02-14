@@ -1,4 +1,4 @@
-import { Card, Deck } from "./card";
+import { Deck } from "./card";
 import { scorer } from "./standardRanker";
 import io from "socket.io";
 
@@ -163,7 +163,7 @@ class GameHandler {
       const card = player[rowTo][idxTo];
       opponent.socket.emit("reply", {
         msg: "oppoSet",
-        payload: [idxFrom, rowTo, idxTo, card.toString()]
+        payload: [idxFrom, rowTo, idxTo, card]
       });
       this.status.moves -= 1;
       this.next();
@@ -189,19 +189,26 @@ class GameHandler {
     });
   }
 
-  deal(player, n) {
-    const cards = this.deck.draw(n).map((c, i) => [i, c]);
+  deal(player, n, pineapple = false) {
+    let cards;
+    if (n === 1) {
+      cards = this.deck.draw(1).map((c, i) => [2, c]);
+    } else if (n === 3) {
+      cards = this.deck.draw(1).map((c, i) => [i + 2, c]);
+    } else {
+      cards = this.deck.draw(n).map((c, i) => [i, c]);
+    }
     const opponent = this.idToOpponent[player.socket.id];
     player.getDealt(cards);
 
     player.socket.emit("reply", {
       msg: "deal",
-      payload: cards.map(([i, c]) => [i, c.toString()])
+      payload: cards
     });
 
     opponent.socket.emit("reply", {
       msg: "oppoDeal",
-      payload: cards.map(([i, c]) => [i, c.toString()])
+      payload: pineapple ? Array(n).fill("Xx") : cards
     });
   }
 

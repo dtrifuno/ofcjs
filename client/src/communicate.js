@@ -1,6 +1,5 @@
 import io from "socket.io-client";
 
-import Card from "./card";
 import { playerState, opponentState, sstate } from "./containers";
 
 class Handler {
@@ -18,14 +17,12 @@ class Handler {
       const [playerChips, opponentName, opponentChips] = data.payload;
       this.handleGameStart(playerChips, opponentName, opponentChips);
     } else if (data.msg === "deal") {
-      const xs = data.payload.map(([i, c]) => [i, Card.fromString(c)]);
+      const xs = data.payload;
       this.player.handleDeal(xs);
     } else if (data.msg === "oppoDeal") {
-      const xs = data.payload.map(([i, c]) => [i, Card.fromString(c)]);
+      const xs = data.payload;
       this.opponent.handleDeal(xs);
     } else if (data.msg === "oppoSet") {
-      const { payload } = data;
-      payload[3] = Card.fromString(payload[3]);
       this.opponent.move(...data.payload);
     } else if (data.msg === "newGame") {
       this.handleNewGame();

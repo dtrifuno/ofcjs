@@ -1,9 +1,21 @@
-import { Card } from "./card";
+import { ranks } from "./card";
 import PokerEvaluator from "poker-evaluator";
+
+const rows = ["front", "middle", "back"];
 
 const evalHand = hand => PokerEvaluator.evalHand(hand);
 
-const rows = ["front", "middle", "back"];
+function eval3Fix(hand) {
+  // poker-evaluator is bugged and ranks A23 as a straight,
+  // this function overwrites that behaviour
+  const results = evalHand(hand);
+  if (results.handType != 5) {
+    return results;
+  }
+
+  // same rank as A6432
+  return { handType: 1, handRank: 785, value: 4881, handName: "high card" };
+}
 
 class StandardOFCScorer {
   scoreGame(player1, player2) {
@@ -35,14 +47,17 @@ class StandardOFCScorer {
     } else {
       // find winner of each row
       for (let row of rows) {
-        const diff =
-          evalHand(player1[row].map(x => x.toString())).value -
-          evalHand(player2[row].map(x => x.toString())).value;
+        let diff;
+        if (row === "front") {
+          diff = eval3Fix(player1[row]).value - eval3Fix(player2[row]).value;
+        } else {
+          diff = evalHand(player1[row]).value - evalHand(player2[row]).value;
+        }
         if (diff > 0) {
           table[row].winner = player1.name;
           score += 1;
         } else if (diff < 0) {
-          table[row].winner = player1.name;
+          table[row].winner = player2.name;
           score -= 1;
         } else {
           table[row].winner = "";
@@ -60,7 +75,7 @@ class StandardOFCScorer {
     }
 
     score +=
-      this.sumRoyalties(player1royalties) + this.sumRoyalties(player2royalties);
+      this.sumRoyalties(player1royalties) - this.sumRoyalties(player2royalties);
     table[player1.name] = score;
     table[player2.name] = -score;
     return table;
@@ -87,52 +102,44 @@ class StandardOFCScorer {
   }
 
   royaltiesFront(hand) {
-    const handRank = evalHand(hand.map(x => x.toString())).handRank;
+    const handValue = eval3Fix(hand).value;
 
     // no front royalties for less than sixes
-    if (handRank > evalHand(["6h", "6s", "2c"]).handRank) {
-      return ["<66x", 0];
+    if (handValue < evalHand(["6h", "6s", "2c"]).value) {
+      return ["<66", 0];
     }
 
     // high value pairs (except AAx)
     const pairRoyalties = ["6", "7", "8", "9", "T", "J", "Q", "K"];
-    for (let i = 0; i < pairRoyalties.length; i += 1) {
-      const c = pairRoyalties[i];
+    for (let [i, r] of pairRoyalties.entries()) {
       if (
-        handRank <= evalHand([c + "s", c + "d", "2c"]).handRank &&
-        handRank >= evalHand([c + "s", c + "d", "Ac"]).handRank
+        handValue >= evalHand([r + "s", r + "d", "2c"]).value &&
+        handValue <= evalHand([r + "s", r + "d", "Ac"]).value
       ) {
-        return [c + c + "x", 1 + i];
+        return [r + r, i + 1];
       }
     }
 
     // AAx
     if (
-      handRank <= evalHand(["As", "Ah", "2c"]).handRank &&
-      handRank >= evalHand(["Ac", "Ah", "Kd"]).handRank
+      handValue >= evalHand(["As", "Ah", "2c"]).value &&
+      handValue <= evalHand(["Ac", "Ah", "Kd"]).value
     ) {
-      return ["AAx", 9];
+      return ["AA", 9];
     }
 
     // sets
-    for (let r = 0; r < 13; r += 1) {
-      const [card1, card2, card3] = [
-        new Card(r, 0),
-        new Card(r, 1),
-        new Card(r, 2)
-      ];
-      const setStrength = evalHand([card1, card2, card3].map(x => x.toString()))
-        .handRank;
-      if (handRank === setStrength) {
-        const char = card1.toString()[0];
-        return [char + char + char, 10 + r];
+    for (let [i, rank] of ranks.entries()) {
+      const set = ["s", "c", "h"].map(suit => rank + suit);
+      const setValue = evalHand(set).value;
+      if (handValue === setValue) {
+        return [rank + rank + rank, 10 + i];
       }
     }
-    return ["<66x", 0];
   }
 
   royaltiesMiddle(hand) {
-    const { handType, handRank } = evalHand(hand.map(x => x.toString()));
+    const { handType, handRank } = evalHand(hand);
 
     // no royalties for two pairs or worse
     if (handType === 1) {
@@ -184,10 +191,8 @@ class StandardOFCScorer {
   }
 
   royaltiesBack(hand) {
-    const handType = evalHand(hand.map(x => x.toString())).handType;
-
     // no royalties for sets
-    if (handType === 4) {
+    if (evalHand(hand).handType === 4) {
       return ["Set", 0];
     }
 
@@ -198,15 +203,14 @@ class StandardOFCScorer {
   }
 
   hasFouled(player) {
-    const front = player.front.map(x => x.toString());
-    const middle = player.middle.map(x => x.toString());
-    const back = player.back.map(x => x.toString());
+    const { front, middle, back } = player;
     return (
-      evalHand(front).value >= evalHand(middle).value ||
+      eval3Fix(front).value >= evalHand(middle).value ||
       evalHand(middle).value >= evalHand(back).value
     );
   }
 }
 
 const scorer = new StandardOFCScorer();
+
 export { scorer };

@@ -9,7 +9,7 @@ class Card extends Component {
 
     const style = {};
     if (card) {
-      style["backgroundImage"] = `url(/cards/${card.toString()}.png)`;
+      style["backgroundImage"] = `url(/cards/${card}.png)`;
       style["backgroundSize"] = "cover";
     }
 
