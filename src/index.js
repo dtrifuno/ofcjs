@@ -1,6 +1,6 @@
-import { Deck } from "./card";
-import { scorer } from "./standardRanker";
-import io from "socket.io";
+import io from 'socket.io';
+import { Deck } from './card';
+import { scorer } from './standardRanker';
 
 const runningGames = [];
 
@@ -24,7 +24,7 @@ class Player {
 
   getDealt(xs) {
     this.dealt = [];
-    for (let [index, card] of xs) {
+    for (const [index, card] of xs) {
       this.dealt[index] = card;
     }
   }
@@ -35,7 +35,7 @@ class Player {
     }
 
     this[toRow][toIdx] = this.dealt[fromIdx];
-    this.dealt[fromIdx] === null;
+    this.dealt[fromIdx] = null;
     return true;
   }
 
@@ -53,17 +53,15 @@ class Player {
     this.dealt = [];
   }
 
-  hasDealt() {
-    return this.dealt.filter(x => x).length > 0;
+  clearDealt() {
+    this.dealt = [];
   }
 }
 
-[("createGame", "joinGame", "set", "continue")];
-[("gameStart", "deal", "oppoSet", "reset", "gameEnd")];
-
 class GameHandler {
-  constructor(socket, playerName, gameID) {
+  constructor(socket, playerName, gameID, gameType) {
     this.gameID = gameID;
+    this.gameType = gameType;
 
     this.player1 = new Player();
     this.player1.setName(playerName);
@@ -72,61 +70,52 @@ class GameHandler {
     this.idToPlayer[socket.id] = this.player1;
     this.idToOpponent = {};
 
-    this.status = "wait";
+    this.status = 'wait';
     this.deck = new Deck();
   }
 
   handle(socket, data) {
-    console.log(
-      `Handler for ${this.gameID} needs to handle ${JSON.stringify(data)}.`
-    );
+    console.log(`Handler for ${this.gameID} needs to handle ${JSON.stringify(data)}.`);
 
-    if (data.msg === "join") {
+    if (data.msg === 'join') {
       this.handleJoin(socket, data);
-    } else if (data.msg === "set") {
+    } else if (data.msg === 'set') {
       this.handleSet(socket, data);
     }
   }
 
   gameStart() {
-    console.log(
-      `Sending gameStarts to ${this.player1.socket.id} and ${
-        this.player2.socket.id
-      }.`
-    );
+    console.log(`Sending gameStarts to ${this.player1.socket.id} and ${this.player2.socket.id}.`);
 
-    this.player1.socket.emit("reply", {
-      msg: "gameStart",
+    this.player1.socket.emit('reply', {
+      msg: 'gameStart',
       payload: [0, this.player2.name, 0]
     });
 
-    this.player2.socket.emit("reply", {
-      msg: "gameStart",
+    this.player2.socket.emit('reply', {
+      msg: 'gameStart',
       payload: [0, this.player1.name, 0]
     });
 
     // select a button
     const button = [this.player1, this.player2][Math.round(Math.random())];
-    this.status = { playerToAct: button, moves: 5, action: "buttonDeal" };
-    this.deal(button, 5);
+    this.status = { playerToAct: button, moves: 5, action: 'buttonDeal' };
+    this.deal(button, 5, 5);
   }
 
   handleJoin(socket, data) {
     console.log(`Handling join from ${socket.id}.`);
     // is game waiting for another player?
-    if (this.status !== "wait") {
-      console.log("Game already in progress.");
-      this.terminate(
-        socket,
-        "You are attempting to join a game that is already in progress."
-      );
+    if (this.status !== 'wait') {
+      console.log('Game already in progress.');
+      this.terminate(socket, 'You are attempting to join a game that is already in progress.');
       return;
     }
 
     // is player2's name different from player1?
     if (this.player1.name === data.name) {
       console.log(`Name ${data.name} is already taken.`);
-      this.terminate(socket, "Name is already taken.");
+      this.terminate(socket, 'Name is already taken.');
       return;
     }
 
@@ -151,72 +140,68 @@ class GameHandler {
     console.log(this.status.playerToAct.socket.id);
     console.log(player.socket.id);
     if (this.status.playerToAct !== player) {
-      this.terminate(
-        socket,
-        "A player made a move when it was not their turn."
-      );
+      this.terminate(socket, 'A player made a move when it was not their turn.');
       return;
     }
 
     const [idxFrom, rowTo, idxTo] = data.payload;
     if (player.set(idxFrom, rowTo, idxTo)) {
       const card = player[rowTo][idxTo];
-      opponent.socket.emit("reply", {
-        msg: "oppoSet",
+      opponent.socket.emit('reply', {
+        msg: 'oppoSet',
         payload: [idxFrom, rowTo, idxTo, card]
       });
       this.status.moves -= 1;
       this.next();
     } else {
-      this.terminate(
-        socket,
-        "A player tried to set a card they weren't dealt."
-      );
+      this.terminate(socket, "A player tried to set a card they weren't dealt.");
     }
   }
 
   handleGameEnd() {
     const table = scorer.scoreGame(this.player1, this.player2);
 
-    this.player1.socket.emit("reply", {
-      msg: "roundEnd",
+    this.player1.socket.emit('reply', {
+      msg: 'roundEnd',
       payload: table
     });
 
-    this.player2.socket.emit("reply", {
-      msg: "roundEnd",
+    this.player2.socket.emit('reply', {
+      msg: 'roundEnd',
       payload: table
     });
   }
 
-  deal(player, n, pineapple = false) {
+  deal(player, numCardsToDraw, numCardsToSet, pineapple = false) {
     let cards;
-    if (n === 1) {
+    if (numCardsToDraw === 1) {
       cards = this.deck.draw(1).map((c, i) => [2, c]);
-    } else if (n === 3) {
-      cards = this.deck.draw(1).map((c, i) => [i + 2, c]);
+    } else if (numCardsToDraw === 3) {
+      cards = this.deck.draw(3).map((c, i) => [i + 1, c]);
     } else {
-      cards = this.deck.draw(n).map((c, i) => [i, c]);
+      cards = this.deck.draw(numCardsToDraw).map((c, i) => [i, c]);
     }
     const opponent = this.idToOpponent[player.socket.id];
     player.getDealt(cards);
 
-    player.socket.emit("reply", {
-      msg: "deal",
-      payload: cards
+    player.socket.emit('reply', {
+      msg: 'deal',
+      payload: [cards, numCardsToSet]
     });
 
-    opponent.socket.emit("reply", {
-      msg: "oppoDeal",
-      payload: pineapple ? Array(n).fill("Xx") : cards
+    let concealedCards;
+    if (pineapple) {
+      concealedCards = cards.map(([i, _]) => [i, 'Xx']);
+    }
+
+    opponent.socket.emit('reply', {
+      msg: 'oppoDeal',
+      payload: pineapple ? [concealedCards, numCardsToSet] : [cards, numCardsToSet]
     });
   }
 
-  //
-  pineappleDeal(player, n) {}
-
   next() {
-    const status = this.status;
+    const { status } = this;
     const currentID = status.playerToAct.socket.id;
 
     // check if player has more actions due
@@ -230,30 +215,34 @@ class GameHandler {
       return;
     }
 
+    const player = this.idToPlayer[currentID];
     const opponent = this.idToOpponent[currentID];
-    if (status.action === "buttonDeal") {
+    if (status.action === 'buttonDeal') {
       this.status = {
         playerToAct: opponent,
-        action: "deal",
+        action: 'deal',
         moves: 5
       };
-      this.deal(opponent, 5);
-    } else if (status.action === "deal" || status.action === "set") {
+      this.deal(opponent, 5, 5);
+    } else if (status.action === 'deal' || status.action === 'set') {
       this.status = {
         playerToAct: opponent,
-        action: "set",
+        action: 'set',
         moves: 1
       };
-      this.deal(opponent, 1);
-    } else if (status.action === "pineappleSet") {
-      return;
-      // TODO
+      if (this.gameType === 'pineapple') {
+        player.clearDealt();
+        this.deal(opponent, 3, 2, true);
+        this.status.moves = 2;
+      } else {
+        this.deal(opponent, 1, 1);
+      }
     }
   }
 
   terminate(socket, message) {
-    socket.emit("reply", {
-      msg: "terminate",
+    socket.emit('reply', {
+      msg: 'terminate',
       payload: message
     });
   }
@@ -263,14 +252,15 @@ const wss = io(3001);
 
 function handleCreateGame(socket, payload) {
   let { gameID, playerName } = payload;
+  const { gameType } = payload;
   console.log(`got a create game from ${socket.id}: ${[playerName, gameID]}`);
   console.log(`HCG: ${socket.id}`);
 
   // check if both name and game ID are present
   if (!gameID || !playerName) {
-    socket.emit("reply", {
-      msg: "terminate",
-      payload: "Invalid name or game ID."
+    socket.emit('reply', {
+      msg: 'terminate',
+      payload: 'Invalid name or game ID.'
     });
     return null;
   }
@@ -282,19 +272,19 @@ function handleCreateGame(socket, payload) {
   // check if game ID is available
   // TODO
 
-  const handler = new GameHandler(socket, playerName, gameID);
+  const handler = new GameHandler(socket, playerName, gameID, gameType);
   console.log(`registering new handler for ${gameID}`);
   return handler;
 }
 
-wss.on("connection", socket => {
-  console.log("connection!");
+wss.on('connection', socket => {
+  console.log('connection!');
 
-  for (let handler of runningGames) {
+  for (const handler of runningGames) {
     socket.on(handler.gameID, data => handler.handle(socket, data));
   }
 
-  socket.on("createGame", payload => {
+  socket.on('createGame', payload => {
     const handler = handleCreateGame(socket, payload);
     if (handler) {
       runningGames.push(handler);
