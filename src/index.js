@@ -2,7 +2,7 @@ import io from 'socket.io';
 import { Deck } from './card';
 import { scorer } from './standardRanker';
 
-const runningGames = [];
+const runningGames = new Map([]);
 
 class Player {
   constructor() {
@@ -74,6 +74,11 @@ class GameHandler {
     this.deck = new Deck();
   }
 
+  /**
+   * Handles a message from one of the players.
+   * @param {socket} socket - The socket on which the message was received.
+   * @param {object} data - Message content.
+   */
   handle(socket, data) {
     console.log(`Handler for ${this.gameID} needs to handle ${JSON.stringify(data)}.`);
 
@@ -84,6 +89,9 @@ class GameHandler {
     }
   }
 
+  /**
+   * Informs both clients that the game is starting.
+   */
   gameStart() {
     console.log(`Sending gameStarts to ${this.player1.socket.id} and ${this.player2.socket.id}.`);
 
@@ -97,12 +105,17 @@ class GameHandler {
       payload: [0, this.player1.name, 0]
     });
 
-    // select a button
+    // select a button FIXME
     const button = [this.player1, this.player2][Math.round(Math.random())];
     this.status = { playerToAct: button, moves: 5, action: 'buttonDeal' };
     this.deal(button, 5, 5);
   }
 
+  /**
+   * Handles attempts to join the game.
+   * @param {socket} socket - The socket on which the message was received.
+   * @param {object} data - Message content.
+   */
   handleJoin(socket, data) {
     console.log(`Handling join from ${socket.id}.`);
     // is game waiting for another player?
@@ -113,15 +126,15 @@ class GameHandler {
     }
 
     // is player2's name different from player1?
-    if (this.player1.name === data.name) {
-      console.log(`Name ${data.name} is already taken.`);
+    if (this.player1.name === data.playerName) {
+      console.log(`Name ${data.playerName} is already taken.`);
       this.terminate(socket, 'Name is already taken.');
       return;
     }
 
     console.log(Object.keys(this.idToPlayer));
     this.player2 = new Player();
-    this.player2.setName(data.name);
+    this.player2.setName(data.playerName);
     this.player2.socket = socket;
     this.idToPlayer[socket.id] = this.player2;
     console.log(Object.keys(this.idToPlayer));
@@ -132,6 +145,11 @@ class GameHandler {
     this.gameStart();
   }
 
+  /**
+   * Handles a card set message from a client.
+   * @param {socket} socket - The socket on which the message was received.
+   * @param {object} data - Message content.
+   */
   handleSet(socket, data) {
     // check if waiting for card from player
     const player = this.idToPlayer[socket.id];
@@ -160,6 +178,8 @@ class GameHandler {
 
   handleGameEnd() {
     const table = scorer.scoreGame(this.player1, this.player2);
+    console.log(this.player1.name);
+    console.log(this.player2.name);
 
     this.player1.socket.emit('reply', {
       msg: 'roundEnd',
@@ -172,6 +192,13 @@ class GameHandler {
     });
   }
 
+  /**
+   *
+   * @param {Object} player - The player to whom the cards are to be dealt.
+   * @param {number} numCardsToDraw - The number of cards to deal.
+   * @param {number} numCardsToSet - The number of cards the player is allowed to set.
+   * @param {boolean} pineapple - Should the card faces be hidden from the opponents?
+   */
   deal(player, numCardsToDraw, numCardsToSet, pineapple = false) {
     let cards;
     if (numCardsToDraw === 1) {
@@ -200,6 +227,9 @@ class GameHandler {
     });
   }
 
+  /**
+   * Advance to the next game state.
+   */
   next() {
     const { status } = this;
     const currentID = status.playerToAct.socket.id;
@@ -250,11 +280,16 @@ class GameHandler {
 
 const wss = io(3001);
 
-function handleCreateGame(socket, payload) {
+/**
+ * Handles a join game attempt - creates a new GameHandler if one doesn't exist for gameID, otherwise defers to handler.
+ * @param {*} socket
+ * @param {*} payload
+ * @returns {GameHandler|null} - A GameHandler for the given gameID if one didn't already exist, otherwise null.
+ */
+function handleJoinGame(socket, payload) {
   let { gameID, playerName } = payload;
   const { gameType } = payload;
   console.log(`got a create game from ${socket.id}: ${[playerName, gameID]}`);
-  console.log(`HCG: ${socket.id}`);
 
   // check if both name and game ID are present
   if (!gameID || !playerName) {
@@ -269,10 +304,16 @@ function handleCreateGame(socket, payload) {
   playerName = playerName.substring(0, 20);
   gameID = gameID.substring(0, 20);
 
-  // check if game ID is available
-  // TODO
+  let handler = runningGames.get(gameID);
+  if (handler !== undefined) {
+    // game exists, let handler handle it
+    handler.handleJoin(socket, payload);
+    return null;
+  }
 
-  const handler = new GameHandler(socket, playerName, gameID, gameType);
+  // we need to create game
+  handler = new GameHandler(socket, playerName, gameID, gameType);
+  runningGames.set(gameID, handler);
   console.log(`registering new handler for ${gameID}`);
   return handler;
 }
@@ -280,14 +321,14 @@ function handleCreateGame(socket, payload) {
 wss.on('connection', socket => {
   console.log('connection!');
 
-  for (const handler of runningGames) {
+  runningGames.forEach(handler => {
+    console.log(handler.gameID);
     socket.on(handler.gameID, data => handler.handle(socket, data));
-  }
+  });
 
-  socket.on('createGame', payload => {
-    const handler = handleCreateGame(socket, payload);
+  socket.on('joinGame', payload => {
+    const handler = handleJoinGame(socket, payload);
     if (handler) {
-      runningGames.push(handler);
       socket.on(handler.gameID, data => handler.handle(socket, data));
     }
   });
