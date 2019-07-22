@@ -1,34 +1,254 @@
-.App {
+:root {
+  --width: 6.5vw;
+}
+
+.Game {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+
   text-align: center;
+  background: #696969;
+  height: 100vh;
+  width: 100vw;
 }
 
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 40vmin;
-  pointer-events: none;
+.player {
+  padding: 2vw;
 }
 
-.Menu {
-  background-color: #282c34;
-  width: 100%;
-  min-height: 100vh;
+.menu {
+  background-color: white;
+  height: 100vh;
+}
+
+.bottom {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+}
+
+.menu-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: large;
+}
+
+.logo {
+  background-color: #282c34;
+  text-align: center;
+  display: block;
+  height: 15%;
+  font-size: 12vh;
   color: white;
+  padding-bottom: 2vh;
 }
 
-.App-link {
-  color: #61dafb;
+button {
+  margin: 1vh;
+  font-size: large;
+  margin-top: 2vh;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+form {
+  display: table;
+}
+
+.input-row {
+  display: table-row;
+  margin: 2px;
+}
+
+label {
+  display: table-cell;
+}
+
+input {
+  display: table-cell;
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.App-header {
+  text-align: center;
+  background-color: #282c34;
+  display: block;
+  width: 100%;
+  height: 10vh;
+  position: fixed;
+  top: 0;
+  padding: 0px;
+  font-size: 20px;
+}
+
+.spacer {
+  width: 1vw;
+}
+
+.player {
+  display: flex;
+  flex-direction: column;
+}
+
+.card-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin: 0.75vh;
+}
+
+.card-outline {
+  height: calc(1.44674 * var(--width));
+  width: var(--width);
+  margin-left: 0.35vh;
+  margin-right: 0.35vh;
+  border: 2px solid white;
+  border-radius: 3%;
+}
+
+.card-outline-selected {
+  border: 2px solid red;
+}
+
+.card {
+  width: 99.5%;
+  height: 99.5%;
+  background-size: cover;
+}
+
+.nameplate-container {
+  margin-top: 2vh;
+  margin-bottom: 2vh;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+}
+
+.nameplate {
+  border: 2px solid black;
+  min-width: 7vh;
+  margin: auto;
+  background-color: white;
+}
+
+.name {
+  font-weight: bold;
+  font-size: 2.2vh;
+  padding-left: 1vh;
+  padding-right: 1vh;
+}
+
+.chips {
+  font-size: 2vh;
+}
+
+@media (orientation: portrait) {
+  :root {
+    --height: 8.4vh;
   }
-  to {
-    transform: rotate(360deg);
+
+  .spacer {
+    height: 1vh;
   }
+
+  .card-outline {
+    height: var(--height);
+    width: calc(0.6912 * var(--height));
+  }
+
+  .bottom {
+    flex-direction: row-reverse;
+  }
+
+  .Game {
+    flex-direction: column-reverse;
+    align-items: start;
+  }
+}
+
+.dialog {
+  min-width: 30vw;
+  height: 40vh;
+  padding: 2.5vw;
+  border: 2px solid black;
+  background: white;
+
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.dialog-title > h2 {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.dialog-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  text-align: left;
+}
+
+.dialog-textbox {
+  border: 1px solid black;
+  padding-left: 1vw;
+  padding-right: 1vw;
+  padding-bottom: 0.75vw;
+  overflow: auto;
+}
+
+.dialog-table {
+  width: 100%;
+}
+
+.dialog-buttons {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+.dialog-textbox > h3 {
+  margin-bottom: 0;
+  margin-top: 5px;
+}
+
+.dialog-button-spacer {
+  width: 20%;
+}
+
+.dialog-player {
+  color: green;
+}
+
+.dialog-opponent {
+  color: red;
+}
+
+th {
+  text-align: left;
+}
+
+.dialog-button {
+  color: white;
+  font-weight: bold;
+  background-color: #007bff;
+  border: 1px solid transparent;
+  text-align: center;
+  line-height: 1.5;
+  padding: 0.4em 1em;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.dialog-button:hover {
+  background-color: #006ce0;
 }
