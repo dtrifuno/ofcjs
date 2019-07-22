@@ -1,5 +1,6 @@
 import React, { Component } from "react";
 import handler from "../communicate";
+import { sstate } from "../containers.js";
 
 function green(e) {
   return <span className="dialog-player">{e}</span>;
@@ -138,13 +139,14 @@ class Dialog extends Component {
             {this.renderTable()}
             {this.renderScoops()}
             {this.renderNet()}
-            <h3>Total Score</h3>
-            {this.renderTotal()}
           </div>
           <div className="dialog-buttons">
-            <button className="dialog-button">Continue</button>
-            <div className="dialog-button-spacer" />
-            <button className="dialog-button">Quit</button>
+            <button
+              className="dialog-button"
+              onClick={() => sstate.hideEndOfRound()}
+            >
+              Continue
+            </button>
           </div>
         </div>
       </div>

@@ -32,6 +32,14 @@ class ScreenState extends Container {
     }));
   }
 
+  hideEndOfRound() {
+    this.setState(state => ({
+      ...state,
+      inGame: true,
+      dialog: false
+    }));
+  }
+
   showMainMenu() {
     this.setState(state => ({
       inGame: false,

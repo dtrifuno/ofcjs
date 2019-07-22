@@ -2,25 +2,10 @@
   --width: 6.5vw;
 }
 
-.Game {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
-
-  text-align: center;
-  background: #696969;
-  height: 100vh;
-  width: 100vw;
-}
-
-.player {
-  padding: 2vw;
-}
-
 .menu {
   background-color: white;
-  height: 100vh;
+  height: 100%;
+  text-align: center;
 }
 
 .bottom {
@@ -40,10 +25,12 @@
   background-color: #282c34;
   text-align: center;
   display: block;
-  height: 15%;
-  font-size: 12vh;
+  height: 7rem;
+  font-size: 6rem;
+  padding-bottom: 0rem;
+  margin-bottom: 1rem;
+  line-height: 1;
   color: white;
-  padding-bottom: 2vh;
 }
 
 button {
@@ -61,12 +48,16 @@ form {
   margin: 2px;
 }
 
-label {
-  display: table-cell;
-}
-
 input {
-  display: table-cell;
+  width: 18rem;
+  max-width: 90vw;
+  display: block;
+  padding: 0.375rem 0.75rem;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: #495057;
+  border: 1px solid #ced4da;
+  border-radius: 0.25rem;
 }
 
 .form-container {
@@ -91,7 +82,20 @@ input {
   width: 1vw;
 }
 
+.game {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+
+  text-align: center;
+  background: #696969;
+  height: 100vh;
+  width: 100vw;
+}
+
 .player {
+  padding: 2vw;
   display: flex;
   flex-direction: column;
 }
@@ -166,7 +170,7 @@ input {
     flex-direction: row-reverse;
   }
 
-  .Game {
+  .game {
     flex-direction: column-reverse;
     align-items: start;
   }

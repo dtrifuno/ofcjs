@@ -1,77 +1,30 @@
 import io from "socket.io";
 import { Deck } from "./card";
+import { Player } from "./player";
 import { scorer } from "./standardRanker";
 
+const activeNames = new Set();
 const runningGames = new Map([]);
-
-class Player {
-  constructor() {
-    this.name = null;
-    this.chips = 0;
-    this.front = [];
-    this.middle = [];
-    this.back = [];
-    this.dealt = [];
-  }
-
-  setName(name) {
-    this.name = name;
-  }
-
-  setChips(chips) {
-    this.chips = chips;
-  }
-
-  getDealt(xs) {
-    this.dealt = [];
-    for (const [index, card] of xs) {
-      this.dealt[index] = card;
-    }
-  }
-
-  set(fromIdx, toRow, toIdx) {
-    if (!this.dealt[fromIdx] || this[toRow][toIdx]) {
-      return false;
-    }
-
-    this[toRow][toIdx] = this.dealt[fromIdx];
-    this.dealt[fromIdx] = null;
-    return true;
-  }
-
-  allRowsSet() {
-    if (this.front.filter(x => x).length < 3) return false;
-    if (this.middle.filter(x => x).length < 5) return false;
-    if (this.back.filter(x => x).length < 5) return false;
-    return true;
-  }
-
-  reset() {
-    this.front = [];
-    this.middle = [];
-    this.back = [];
-    this.dealt = [];
-  }
-
-  clearDealt() {
-    this.dealt = [];
-  }
-}
+let queuedGame = undefined;
 
 class GameHandler {
-  constructor(socket, playerName, gameID, gameType) {
-    this.gameID = gameID;
+  constructor(socket, playerName, gameType) {
+    this.gameID = Math.random()
+      .toString(36)
+      .substr(2, 9);
     this.gameType = gameType;
 
     this.player1 = new Player();
     this.player1.setName(playerName);
     this.player1.socket = socket;
+    socket.on("disconnect", () =>
+      this.tearDown("Game over. A player has disconected.")
+    );
     this.idToPlayer = {};
     this.idToPlayer[socket.id] = this.player1;
     this.idToOpponent = {};
 
     this.status = "wait";
-    this.deck = new Deck();
   }
 
   /**
@@ -106,20 +59,31 @@ class GameHandler {
       payload: {
         yourChips: 100,
         opponentName: this.player2.name,
-        opponentChips: 100
+        opponentChips: 100,
+        gameID: this.gameID
       }
     });
+    this.player1.setChips(100);
 
     this.player2.socket.emit("reply", {
       msg: "gameStart",
       payload: {
         yourChips: 100,
         opponentName: this.player1.name,
-        opponentChips: 100
+        opponentChips: 100,
+        gameID: this.gameID
       }
     });
+    this.player2.setChips(100);
 
+    this.startRound();
+  }
+
+  startRound() {
     // FIXME: select a button
+    this.deck = new Deck();
+    this.player1.reset();
+    this.player2.reset();
     const button = [this.player1, this.player2][Math.round(Math.random())];
     this.status = { playerToAct: button, moves: 5, action: "buttonDeal" };
     this.deal(button, 5, 5);
@@ -155,6 +119,7 @@ class GameHandler {
     this.player2 = new Player();
     this.player2.setName(data.playerName);
     this.player2.socket = socket;
+    socket.on("disconnect", () => this.tearDown());
     this.idToPlayer[socket.id] = this.player2;
     console.log(Object.keys(this.idToPlayer));
 
@@ -201,10 +166,11 @@ class GameHandler {
     }
   }
 
-  handleGameEnd() {
+  handleRoundEnd() {
     const table = scorer.scoreGame(this.player1, this.player2);
     console.log(this.player1.name);
     console.log(this.player2.name);
+    console.log(table);
 
     this.player1.socket.emit("reply", {
       msg: "roundEnd",
@@ -215,6 +181,10 @@ class GameHandler {
       msg: "roundEnd",
       payload: table
     });
+
+    if (this.player1.chips > 0 && this.player2.chips > 0) {
+      this.startRound();
+    }
   }
 
   /**
@@ -261,14 +231,14 @@ class GameHandler {
     const { status } = this;
     const currentID = status.playerToAct.socket.id;
 
-    // check if player has more actions due
+    // check if player has more cards to set
     if (status.moves > 0) {
       return;
     }
 
-    // check if game is over
+    // check if round is over
     if (this.player1.allRowsSet() && this.player2.allRowsSet()) {
-      this.handleGameEnd();
+      this.handleRoundEnd();
       return;
     }
 
@@ -303,55 +273,71 @@ class GameHandler {
       payload: message
     });
   }
+
+  tearDown(msg = null) {
+    console.log(`tearing down ${this.gameID}`);
+    for (const player of [this.player1, this.player2]) {
+      if (player) {
+        activeNames.delete(player.name);
+        if (player.socket) {
+          if (msg) {
+            this.terminate(player.socket, msg);
+          }
+          player.socket.disconnect(true);
+        }
+      }
+    }
+
+    if (queuedGame && queuedGame.gameID === this.gameID) {
+      queuedGame = undefined;
+    }
+
+    delete runningGames[this.gameID];
+  }
 }
 
 const wss = io(3001);
-
 /**
- * Handles a join game attempt - creates a new GameHandler if one doesn't exist for gameID, otherwise defers to handler.
+ * Handles a join game attempt - creates a new GameHandler if one doesn't exist
+ * waiting for a second player, otherwise forwards to handler.
  * @param {*} socket
  * @param {*} payload
  * @returns {GameHandler|null} - A GameHandler for the given gameID if one didn't already exist, otherwise null.
  */
 function handleJoinGame(socket, payload) {
-  let { gameID, playerName } = payload;
+  let { playerName } = payload;
   const { gameType } = payload;
-  console.log(`got a create game from ${socket.id}: ${[playerName, gameID]}`);
+  console.log(`got a create game from ${socket.id}: ${playerName}`);
 
-  // check if both name and game ID are present
-  if (!gameID || !playerName) {
+  // trim name
+  playerName = playerName.trim().substring(0, 20);
+
+  // check if name is available
+  if (!playerName || activeNames.has(playerName)) {
     socket.emit("reply", {
       msg: "terminate",
-      payload: "Invalid name or game ID."
+      payload: `Name ${playerName} is invalid or already taken. Please choose a different name.`
     });
     return null;
   }
 
-  // trim name and game ID
-  playerName = playerName.substring(0, 20);
-  gameID = gameID.substring(0, 20);
-
-  let handler = runningGames.get(gameID);
-  if (handler !== undefined) {
-    // game exists, let handler handle it
-    handler.handleJoin(socket, payload);
-    return null;
+  // if game waiting for a player exists, let handler handle it
+  if (queuedGame !== undefined) {
+    queuedGame.handleJoin(socket, payload);
+    const handler = queuedGame;
+    queuedGame = undefined;
+    return handler;
   }
 
-  // we need to create game
-  handler = new GameHandler(socket, playerName, gameID, gameType);
-  runningGames.set(gameID, handler);
-  console.log(`registering new handler for ${gameID}`);
-  return handler;
+  // else, we need to create a GameHandler
+  queuedGame = new GameHandler(socket, playerName, gameType);
+  runningGames[queuedGame.gameID] = queuedGame;
+  console.log(`registering new handler for ${queuedGame.gameID}`);
+  return queuedGame;
 }
 
 wss.on("connection", socket => {
   console.log("connection!");
-
-  runningGames.forEach(handler => {
-    console.log(handler.gameID);
-    socket.on(handler.gameID, data => handler.handle(socket, data));
-  });
 
   socket.on("joinGame", payload => {
     const handler = handleJoinGame(socket, payload);

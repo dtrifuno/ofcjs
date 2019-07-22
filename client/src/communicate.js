@@ -14,8 +14,7 @@ class Handler {
     console.log("Handling...");
     console.log(data);
     if (data.msg === "gameStart") {
-      const { yourChips, opponentName, opponentChips } = data.payload;
-      this.handleGameStart(yourChips, opponentName, opponentChips);
+      this.handleGameStart(data.payload);
     } else if (data.msg === "deal") {
       const xs = data.payload;
       this.player.handleDeal(xs);
@@ -30,20 +29,20 @@ class Handler {
       const reason = data.payload;
       alert(reason);
     } else if (data.msg === "roundEnd") {
+      this.handleNewGame();
       const table = data.payload;
       this.player.changeChips(table[this.player.state.name]);
       this.opponent.changeChips(table[this.opponent.state.name]);
       sstate.setTable(data.payload);
       sstate.showEndOfRound();
-    } else if (data.msg === "gameEnd") {
-      alert("game end");
     } else {
       alert(`Unrecognized message:\n\n ${data}`);
     }
   }
 
-  handleGameStart(playerChips, opponentName, opponentChips) {
-    this.player.setChips(playerChips);
+  handleGameStart({ yourChips, opponentName, opponentChips, gameID }) {
+    this.gameID = gameID;
+    this.player.setChips(yourChips);
     this.opponent.setName(opponentName);
     this.opponent.setChips(opponentChips);
     this.handleNewGame();
@@ -62,20 +61,9 @@ class Handler {
     });
   }
 
-  joinGame(playerName, gameID) {
+  joinGame(playerName) {
     this.connect();
-    this.gameID = gameID;
-    this.player.setName(playerName);
-    this.socket.emit(this.gameID, {
-      msg: "join",
-      playerName
-    });
-  }
-
-  createGame(playerName, gameID) {
-    this.connect();
-    this.gameID = gameID;
-    this.socket.emit("joinGame", { gameID, playerName });
+    this.socket.emit("joinGame", { playerName });
     this.player.setName(playerName);
     this.opponent.setName("Waiting for opponent...");
   }
@@ -83,15 +71,12 @@ class Handler {
   connect() {
     this.socket = io.connect("localhost:3001");
     this.socket.on("reply", data => this.handle(data));
-  }
-
-  quit() {
-    this.socket.emit(this.gameID, { msg: "quit" });
-    this.socket.disconnect();
-  }
-
-  continue() {
-    this.socket.emit(this.gameID, { msg: "continue" });
+    this.socket.on("disconnect", () => {
+      alert("Game over.");
+      sstate.showMainMenu();
+      playerState.resetCards();
+      opponentState.resetCards();
+    });
   }
 }
 

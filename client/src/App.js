@@ -7,14 +7,14 @@ import Dialog from "./components/Dialog";
 
 class App extends Component {
   render() {
-    const { inGame, dialog, table } = this.props.sstate.state;
+    const { inGame, dialog } = this.props.sstate.state;
     const playerName = this.props.playerState.state.name;
     const playerChips = this.props.playerState.state.chips;
     const opponentName = this.props.opponentState.state.name;
     const opponentChips = this.props.opponentState.state.chips;
 
     const game = (
-      <div className="Game">
+      <div className="game">
         <Player playerState={this.props.playerState} />
         <div className="spacer" />
         <Opponent playerState={this.props.opponentState} />
