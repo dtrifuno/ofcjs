@@ -1,13 +1,13 @@
-import PokerEvaluator from "poker-evaluator";
-import { ranks } from "./card";
+const PokerEvaluator = require("poker-evaluator");
+const { ranks } = require("./card.js");
 
 const rows = ["front", "middle", "back"];
 
 const evalHand = hand => PokerEvaluator.evalHand(hand);
 
 function eval3Fix(hand) {
-  // poker-evaluator is bugged and ranks A23 as a straight,
-  // this function overwrites that behaviour
+  // poker-evaluator is buggy and ranks A23 as a straight,
+  // this function overrides that behaviour
   const results = evalHand(hand);
   if (results.handType !== 5) {
     return results;
@@ -224,4 +224,4 @@ class StandardOFCScorer {
 
 const scorer = new StandardOFCScorer();
 
-export { scorer };
+module.exports = scorer;

@@ -89,8 +89,6 @@ class PlayerState extends Container {
   handleDeal(xs) {
     this.setState(state => {
       const dealt = this.state.dealt;
-      console.log(dealt);
-      console.log(xs);
       const { cards, numCardsToSet } = xs;
       this.state.numCardsToSet = numCardsToSet;
       cards.forEach(([idx, card]) => {
@@ -116,7 +114,6 @@ class PlayerState extends Container {
         newPlayer.dealt = Array(5).fill(null);
       }
       newPlayer.selected = null;
-      console.log(newPlayer);
       return newPlayer;
     });
   }

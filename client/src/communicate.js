@@ -11,8 +11,6 @@ class Handler {
   }
 
   handle(data) {
-    console.log("Handling...");
-    console.log(data);
     if (data.msg === "gameStart") {
       this.handleGameStart(data.payload);
     } else if (data.msg === "deal") {
@@ -69,7 +67,7 @@ class Handler {
   }
 
   connect() {
-    this.socket = io.connect("localhost:3001");
+    this.socket = io.connect();
     this.socket.on("reply", data => this.handle(data));
     this.socket.on("disconnect", () => {
       alert("Game over.");

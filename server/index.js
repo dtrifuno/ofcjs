@@ -1,7 +1,6 @@
-import io from "socket.io";
-import { Deck } from "./card";
-import { Player } from "./player";
-import { scorer } from "./standardRanker";
+const { Deck } = require("./card.js");
+const Player = require("./player.js");
+const scorer = require("./standardRanker.js");
 
 const activeNames = new Set();
 const runningGames = new Map([]);
@@ -296,7 +295,6 @@ class GameHandler {
   }
 }
 
-const wss = io(3001);
 /**
  * Handles a join game attempt - creates a new GameHandler if one doesn't exist
  * waiting for a second player, otherwise forwards to handler.
@@ -336,7 +334,15 @@ function handleJoinGame(socket, payload) {
   return queuedGame;
 }
 
-wss.on("connection", socket => {
+var express = require("express");
+var app = express();
+var server = require("http").Server(app);
+var io = require("socket.io")(server);
+
+server.listen(3001);
+app.use(express.static("server/build"));
+
+io.on("connection", socket => {
   console.log("connection!");
 
   socket.on("joinGame", payload => {
