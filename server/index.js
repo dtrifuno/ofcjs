@@ -339,8 +339,8 @@ var app = express();
 var server = require("http").Server(app);
 var io = require("socket.io")(server);
 
-server.listen(3001);
-app.use(express.static("server/build"));
+server.listen(3000);
+app.use(express.static("client/build"));
 
 io.on("connection", socket => {
   console.log("connection!");

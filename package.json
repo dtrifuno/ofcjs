@@ -1,14 +1,22 @@
 {
   "name": "ofcjs-server",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "",
+  "author": {
+    "name": "Darko Trifunovski",
+    "email": "dtrifuno@gmail.com",
+    "url": "https://trifunovski.me"
+  },
+  "homepage": "https://github.com/dtrifuno/ofcjs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dtrifuno/ofcjs"
+  },
+  "license": "MIT",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon server/index.js"
+    "dev": "nodemon ./server"
   },
-  "author": "",
-  "license": "ISC",
   "dependencies": {
     "express": "^4.17.1",
     "poker-evaluator": "^0.3.1",
