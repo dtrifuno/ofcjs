@@ -38,7 +38,6 @@ class Player extends Component {
     if (!filled && selected) {
       const fromIdx = playerState.state.selected;
       const card = playerState.state.dealt[fromIdx];
-      console.log(card);
       playerState.move(fromIdx, rowId, n, card);
       handler.set(fromIdx, rowId, n);
     }

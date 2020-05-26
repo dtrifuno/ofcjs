@@ -1,5 +1,8 @@
 import React, { Component } from "react";
 import "./App.css";
+import "./Game.css";
+import "./Dialog.css";
+
 import Player from "./components/Player";
 import Opponent from "./components/Opponent";
 import Menu from "./components/Menu";

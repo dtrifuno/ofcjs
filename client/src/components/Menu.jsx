@@ -8,7 +8,6 @@ class Menu extends Component {
   };
 
   onJoin(e) {
-    console.log("join");
     e.preventDefault();
     if (this.state.name === "") {
       alert("Must enter a name.");
@@ -26,11 +25,14 @@ class Menu extends Component {
   render() {
     return (
       <div className="menu">
-        <div className="logo">OFC.js</div>
+        <div className="logo">OFCjs</div>
         <div className="menu-body">
           <h3>Welcome!</h3>
           <p>
-            Please enter your name and press "Join Game" to begin looking for an
+            OFCjs lets you plan <a href="https://en.wikipedia.org/wiki/Open-face_Chinese_poker">open-face Chinese poker</a> online.
+          </p>
+          <p>
+            Please enter your name and press "Start Game" to begin looking for an
             opponent.
           </p>
           <form>
@@ -45,15 +47,16 @@ class Menu extends Component {
               </div>
               <div>
                 <button className="dialog-button" onClick={e => this.onJoin(e)}>
-                  Join Game
+                  Start Game
                 </button>
               </div>
             </div>
           </form>
         </div>
         <footer>
-          <br />
-          <a href="https://github.com/dtrifuno/ofcjs">source code</a>
+          <div>© 2019–2020 Copyright: <a href="https://trifunovski.me/">Darko Trifunovski</a></div>
+          <div>source code: <a href="https://github.com/dtrifuno/ofcjs">github.com/dtrifuno/ofcjs</a>
+          </div>
         </footer>
       </div>
     );

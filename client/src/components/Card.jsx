@@ -9,7 +9,7 @@ class Card extends Component {
 
     const style = {};
     if (card) {
-      style["backgroundImage"] = `url(/cards/${card}.svg)`;
+      style["backgroundImage"] = `url(${process.env.PUBLIC_URL}/cards/${card}.svg)`;
       style["backgroundSize"] = "cover";
     }
 
